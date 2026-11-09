@@ -95,7 +95,17 @@ class MainActivity : Activity() {
             if (bold) setTypeface(typeface, Typeface.BOLD)
         }
 
-    private fun greetingText(): String {\n        val hour = SimpleDateFormat("H", Locale.getDefault()).format(Date()).toIntOrNull() ?: 12\n        return when (hour) {\n            in 5..11 -> "Good morning"\n            in 12..16 -> "Good afternoon"\n            in 17..20 -> "Good evening"\n            else -> "Good night"\n        }\n    }\n\n    private fun showHome() {
+    private fun greetingText(): String {
+        val hour = SimpleDateFormat("H", Locale.getDefault()).format(Date()).toIntOrNull() ?: 12
+        return when (hour) {
+            in 5..11 -> "Good morning"
+            in 12..16 -> "Good afternoon"
+            in 17..20 -> "Good evening"
+            else -> "Good night"
+        }
+    }
+
+    private fun showHome() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(canvas)
