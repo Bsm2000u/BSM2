@@ -180,42 +180,14 @@ class MainActivity : Activity() {
         }
     }
 
-    private inner class SwipeHomeLayout(context: Activity, private val onSwipeUp: () -> Unit) : FrameLayout(context) {
-        private var downX = 0f
-        private var downY = 0f
-        private var detected = false
-        override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { downX = event.x; downY = event.y; detected = false }
-                MotionEvent.ACTION_MOVE -> {
-                    val dx = event.x - downX
-                    val dy = event.y - downY
-                    if (dy < -dp(70) && abs(dy) > abs(dx) * 1.25f) { detected = true; return true }
-                }
-            }
-            return super.onInterceptTouchEvent(event)
-        }
-        override fun onTouchEvent(event: MotionEvent): Boolean {
-            if (event.actionMasked == MotionEvent.ACTION_UP && detected) {
-                detected = false
-                onSwipeUp()
-                return true
-            }
-            return true
-        }
-    }
-
     private fun showHome() {
-        val root = SwipeHomeLayout(this) { showAppDrawer() }.apply {
-            background = wallpaperDrawable()
-            isClickable = true
-            setOnLongClickListener { showCustomization(); true }
-        }
-        val scroll = ScrollView(this).apply { isFillViewport = true; clipToPadding = false }
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(48), dp(22), dp(22))
-        }
+        val home = HomeScreenView(
+            activity = this,
+            wallpaper = wallpaperDrawable(),
+            onSwipeUp = { showAppDrawer() },
+            onLongPress = { showCustomization() }
+        )
+        val content = home.content
         val header = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         header.addView(label(SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()).format(Date()), 15f, Color.WHITE, true).shadow())
         header.addView(label(SimpleDateFormat("h:mm", Locale.getDefault()).format(Date()), 58f, Color.WHITE, true).apply {
@@ -298,9 +270,7 @@ class MainActivity : Activity() {
             setPadding(0, dp(8), 0, 0)
         }
         content.addView(hint)
-        scroll.addView(content)
-        root.addView(scroll, FrameLayout.LayoutParams(-1, -1))
-        setContentView(root)
+        setContentView(home)
     }
 
     private fun TextView.shadow(radius: Float = 4f): TextView {
