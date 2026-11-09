@@ -189,12 +189,22 @@ class MainActivity : Activity() {
         )
         val content = home.content
         val header = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        header.addView(label(SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()).format(Date()), 15f, Color.WHITE, true).shadow())
-        header.addView(label(SimpleDateFormat("h:mm", Locale.getDefault()).format(Date()), 58f, Color.WHITE, true).apply {
-            setPadding(0, dp(2), 0, 0); shadow(7f)
+        header.gravity = Gravity.START
+        header.addView(label(SimpleDateFormat("EEEE  •  d MMMM", Locale.getDefault()).format(Date()), 14f, Color.WHITE, true).apply {
+            shadow(5f)
         })
-        header.addView(label(greetingText(), 14f, Color.WHITE).apply { shadow() })
-        content.addView(header)
+        header.addView(label(SimpleDateFormat("h:mm", Locale.getDefault()).format(Date()), 66f, Color.WHITE, true).apply {
+            setPadding(0, dp(1), 0, 0)
+            shadow(8f)
+            letterSpacing = -0.035f
+        })
+        header.addView(label(greetingText(), 15f, Color.WHITE, true).apply {
+            shadow(5f)
+            setPadding(0, dp(1), 0, 0)
+        })
+        content.addView(header, LinearLayout.LayoutParams(-1, -2).apply {
+            bottomMargin = dp(10)
+        })
 
         val widgets = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -224,7 +234,7 @@ class MainActivity : Activity() {
         val grid = GridView(this).apply {
             numColumns = 4
             horizontalSpacing = dp(8)
-            verticalSpacing = dp(8)
+            verticalSpacing = dp(13)
             stretchMode = GridView.STRETCH_COLUMN_WIDTH
             isVerticalScrollBarEnabled = false
             adapter = AppGridAdapter(favorites)
@@ -248,7 +258,7 @@ class MainActivity : Activity() {
         val dock = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            background = rounded(Color.argb(205, 245, 247, 252), dp(30).toFloat())
+            background = rounded(Color.argb(178, 245, 247, 252), dp(30).toFloat())
             setPadding(dp(10), dp(8), dp(10), dp(8))
             elevation = dp(5).toFloat()
         }
@@ -263,7 +273,7 @@ class MainActivity : Activity() {
             }, FrameLayout.LayoutParams(dp(46), dp(46), Gravity.CENTER))
             dock.addView(slot, LinearLayout.LayoutParams(0, dp(52), 1f))
         }
-        content.addView(dock, LinearLayout.LayoutParams(-1, dp(68)).apply { topMargin = dp(14) })
+        content.addView(dock, LinearLayout.LayoutParams(-1, dp(72)).apply { topMargin = dp(14) })
         val hint = label("Swipe up for all apps  •  Hold an empty area to customize", 10f, Color.WHITE).apply {
             gravity = Gravity.CENTER
             shadow()
