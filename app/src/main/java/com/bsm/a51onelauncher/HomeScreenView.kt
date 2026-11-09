@@ -57,7 +57,7 @@ class HomeScreenView(
             isFillViewport = true
             clipToPadding = false
             overScrollMode = View.OVER_SCROLL_NEVER
-            addView(content, LayoutParams(-1, -2))
+            addView(content, LayoutParams(-1, -1))
             setOnLongClickListener { onLongPress(); true }
         }
         addView(scroll, LayoutParams(-1, -1))
