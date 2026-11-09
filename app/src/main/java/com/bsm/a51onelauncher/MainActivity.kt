@@ -200,7 +200,7 @@ class MainActivity : Activity() {
         dialogContent.addView(title)
         val search = EditText(this).apply {
             hint = "Search apps"
-            singleLine = true
+            isSingleLine = true
             textSize = 15f
             background = rounded(Color.rgb(240, 242, 247), dp(18).toFloat())
             setPadding(dp(15), 0, dp(15), 0)
