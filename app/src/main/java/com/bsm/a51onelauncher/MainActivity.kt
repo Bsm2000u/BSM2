@@ -369,12 +369,12 @@ class MainActivity : Activity() {
         val checked = BooleanArray(apps.size) { i -> chosen.any { it.key == apps[i].key } }
         AlertDialog.Builder(this)
             .setTitle("$title (up to $max)")
-            .setMultiChoiceItems(apps.map { it.title }.toTypedArray(), checked) { _, which, isChecked ->
+            .setMultiChoiceItems(apps.map { it.title }.toTypedArray(), checked) { dialog, which, isChecked ->
                 val app = apps[which]
                 if (isChecked) {
                     if (chosen.size < max) chosen.add(app)
                     else {
-                        (it as? AlertDialog)?.listView?.setItemChecked(which, false)
+                        (dialog as? AlertDialog)?.listView?.setItemChecked(which, false)
                         android.widget.Toast.makeText(this, "Maximum $max apps", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 } else chosen.removeAll { it.key == app.key }
