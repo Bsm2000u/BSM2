@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.BaseAdapter
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.GridView
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -103,14 +104,12 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(22), dp(24), dp(22), dp(12))
         }
-        val top = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+        val top = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(54))
         }
         val greeting = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+            gravity = Gravity.CENTER
         }
         greeting.addView(label("MONDAY STYLE", 10f, muted, true).apply { gravity = Gravity.CENTER })
         greeting.addView(label("Good day", 25f, ink, true).apply {
@@ -123,10 +122,9 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setTextColor(Color.rgb(75, 105, 190))
             background = rounded(Color.rgb(231, 236, 249), dp(22).toFloat())
-            layoutParams = LinearLayout.LayoutParams(dp(46), dp(46))
         }
-        top.addView(greeting)
-        top.addView(profile)
+        top.addView(greeting, FrameLayout.LayoutParams(-1, -2, Gravity.CENTER))
+        top.addView(profile, FrameLayout.LayoutParams(dp(46), dp(46), Gravity.END or Gravity.CENTER_VERTICAL))
         content.addView(top)
 
         val clockCard = LinearLayout(this).apply {
