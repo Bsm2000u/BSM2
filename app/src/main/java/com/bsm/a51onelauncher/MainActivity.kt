@@ -2,14 +2,17 @@ package com.bsm.a51onelauncher
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.WallpaperManager
 import android.content.Intent
 import android.content.pm.ResolveInfo
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -24,6 +27,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.concurrent.thread
+import kotlin.math.abs
 
 class MainActivity : Activity() {
     private val ink = Color.rgb(27, 31, 41)
@@ -38,30 +42,47 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = canvas
-        window.navigationBarColor = canvas
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+        if (android.os.Build.VERSION.SDK_INT >= 29) {
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
+        }
         window.decorView.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         showLoading()
         loadAppsInBackground()
+    }
+
+    private fun wallpaperDrawable(): Drawable {
+        return try {
+            WallpaperManager.getInstance(this).drawable ?: ColorDrawable(Color.DKGRAY)
+        } catch (_: Exception) {
+            ColorDrawable(Color.DKGRAY)
+        }
     }
 
     private fun showLoading() {
         val view = LinearLayout(this).apply {
             gravity = Gravity.CENTER
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(canvas)
+            background = wallpaperDrawable()
             addView(TextView(this@MainActivity).apply {
                 text = "One UI Launcher"
                 textSize = 22f
-                setTextColor(ink)
+                setTextColor(Color.WHITE)
                 setTypeface(typeface, Typeface.BOLD)
+                setShadowLayer(5f, 0f, 2f, Color.BLACK)
             })
             addView(TextView(this@MainActivity).apply {
                 text = "Preparing your apps…"
                 textSize = 13f
-                setTextColor(muted)
+                setTextColor(Color.WHITE)
                 setPadding(0, dp(8), 0, 0)
+                setShadowLayer(4f, 0f, 1f, Color.BLACK)
             })
         }
         setContentView(view)
@@ -105,74 +126,71 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun showHome() {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(canvas)
+    private inner class SwipeHomeLayout(context: Activity, private val onSwipeUp: () -> Unit) :
+        FrameLayout(context) {
+        private var downX = 0f
+        private var downY = 0f
+        private var detected = false
+
+        override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.x
+                    downY = event.y
+                    detected = false
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = event.x - downX
+                    val dy = event.y - downY
+                    if (dy < -dp(70) && abs(dy) > abs(dx) * 1.25f) {
+                        detected = true
+                        return true
+                    }
+                }
+            }
+            return super.onInterceptTouchEvent(event)
         }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            if (event.actionMasked == MotionEvent.ACTION_UP && detected) {
+                detected = false
+                onSwipeUp()
+                return true
+            }
+            return true
+        }
+    }
+
+    private fun showHome() {
+        val root = SwipeHomeLayout(this) { showAppDrawer() }.apply {
+            background = wallpaperDrawable()
+            isClickable = true
+        }
+
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(24), dp(22), dp(12))
+            setPadding(dp(22), dp(48), dp(22), dp(24))
         }
-        val top = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(-1, dp(54))
-        }
-        val greeting = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-        }
-        greeting.addView(label(SimpleDateFormat("EEEE", Locale.getDefault()).format(Date()).uppercase(Locale.getDefault()) + " STYLE", 10f, muted, true).apply { gravity = Gravity.CENTER })
-        greeting.addView(label(greetingText(), 25f, ink, true).apply {
-            gravity = Gravity.CENTER
-            setPadding(0, dp(3), 0, 0)
-        })
-        val profile = TextView(this).apply {
-            text = "●"
-            textSize = 22f
-            gravity = Gravity.CENTER
-            setTextColor(Color.rgb(75, 105, 190))
-            background = rounded(Color.rgb(231, 236, 249), dp(22).toFloat())
-        }
-        top.addView(greeting, FrameLayout.LayoutParams(-1, -2, Gravity.CENTER))
-        top.addView(profile, FrameLayout.LayoutParams(dp(46), dp(46), Gravity.END or Gravity.CENTER_VERTICAL))
-        content.addView(top)
 
-        val clockCard = LinearLayout(this).apply {
+        val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(Color.WHITE, dp(28).toFloat())
-            setPadding(dp(22), dp(20), dp(22), dp(20))
-            elevation = dp(2).toFloat()
+            gravity = Gravity.START
         }
-        clockCard.addView(label(SimpleDateFormat("h:mm", Locale.getDefault()).format(Date()), 48f, ink, true))
-        clockCard.addView(label(SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()).format(Date()), 14f, muted).apply {
+        header.addView(label(
+            SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()).format(Date()),
+            15f, Color.WHITE, true
+        ).apply { setShadowLayer(5f, 0f, 2f, Color.BLACK) })
+        header.addView(label(SimpleDateFormat("h:mm", Locale.getDefault()).format(Date()), 58f, Color.WHITE, true).apply {
             setPadding(0, dp(2), 0, 0)
+            setShadowLayer(7f, 0f, 3f, Color.BLACK)
         })
-        content.addView(clockCard, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(24) })
+        header.addView(label(greetingText(), 14f, Color.WHITE).apply {
+            setPadding(0, dp(1), 0, 0)
+            setShadowLayer(4f, 0f, 2f, Color.BLACK)
+        })
+        content.addView(header)
 
-        val search = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = rounded(Color.rgb(235, 237, 243), dp(24).toFloat())
-            setPadding(dp(18), 0, dp(18), 0)
-            isClickable = true
-            isFocusable = true
-        }
-        search.addView(label("⌕", 25f, muted, true))
-        search.addView(label("Search apps", 15f, muted).apply { setPadding(dp(12), dp(15), 0, dp(15)) })
-        search.setOnClickListener { showAppDrawer() }
-        content.addView(search, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(18) })
-
-        val section = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        section.addView(label("Your apps", 19f, ink, true), LinearLayout.LayoutParams(0, -2, 1f))
-        section.addView(label("See all  ›", 13f, Color.rgb(65, 94, 173), true).apply {
-            setOnClickListener { showAppDrawer() }
-        })
-        content.addView(section, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(26); bottomMargin = dp(14)
-        })
+        content.addView(View(this), LinearLayout.LayoutParams(1, 0, 1f))
 
         val grid = GridView(this).apply {
             numColumns = 4
@@ -181,33 +199,55 @@ class MainActivity : Activity() {
             stretchMode = GridView.STRETCH_COLUMN_WIDTH
             isVerticalScrollBarEnabled = false
             adapter = AppGridAdapter(apps.take(8))
-            layoutParams = LinearLayout.LayoutParams(-1, dp(212))
+            layoutParams = LinearLayout.LayoutParams(-1, dp(210))
+            selector = ColorDrawable(Color.TRANSPARENT)
         }
         content.addView(grid)
 
-        val scroll = android.widget.ScrollView(this).apply {
-            isFillViewport = true
-            addView(content)
+        val search = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(Color.argb(205, 255, 255, 255), dp(28).toFloat())
+            setPadding(dp(18), 0, dp(18), 0)
+            isClickable = true
+            isFocusable = true
+            elevation = dp(3).toFloat()
         }
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        search.addView(label("⌕", 25f, Color.DKGRAY, true))
+        search.addView(label("Search apps", 15f, Color.DKGRAY).apply {
+            setPadding(dp(12), dp(15), 0, dp(15))
+        })
+        search.setOnClickListener { showAppDrawer() }
+        content.addView(search, LinearLayout.LayoutParams(-1, dp(54)).apply {
+            topMargin = dp(15)
+        })
 
-        val bottom = LinearLayout(this).apply {
+        val dock = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(dp(20), dp(10), dp(20), dp(18))
-            setBackgroundColor(canvas)
+            background = rounded(Color.argb(190, 245, 247, 252), dp(30).toFloat())
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            elevation = dp(5).toFloat()
         }
-        val drawer = TextView(this).apply {
-            text = "  ⠿     All apps     "
-            textSize = 15f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-            setTypeface(typeface, Typeface.BOLD)
-            background = rounded(Color.rgb(48, 57, 79), dp(28).toFloat())
-            setPadding(dp(30), dp(15), dp(30), dp(15))
-            setOnClickListener { showAppDrawer() }
+        val dockApps = apps.take(4)
+        dockApps.forEach { app ->
+            val slot = FrameLayout(this).apply {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { launch(app.info) }
+            }
+            val icon = ImageView(this).apply {
+                setImageDrawable(app.icon)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+            slot.addView(icon, FrameLayout.LayoutParams(dp(48), dp(48), Gravity.CENTER))
+            dock.addView(slot, LinearLayout.LayoutParams(0, dp(54), 1f))
         }
-        bottom.addView(drawer)
-        root.addView(bottom)
+        content.addView(dock, LinearLayout.LayoutParams(-1, dp(74)).apply {
+            topMargin = dp(16)
+        })
+
+        root.addView(content, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
     }
 
@@ -243,10 +283,11 @@ class MainActivity : Activity() {
                 }
                 icon = ImageView(this@MainActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
                 tile.addView(icon, LinearLayout.LayoutParams(dp(48), dp(48)))
-                name = label("", 11f, ink, true).apply {
+                name = label("", 11f, Color.WHITE, true).apply {
                     gravity = Gravity.CENTER
                     maxLines = 1
                     ellipsize = android.text.TextUtils.TruncateAt.END
+                    setShadowLayer(4f, 0f, 1f, Color.BLACK)
                 }
                 tile.addView(name, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
                 tile.tag = Pair(icon, name)
@@ -273,15 +314,19 @@ class MainActivity : Activity() {
         }
         val dialogContent = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(26), dp(20), dp(12))
-            setBackgroundColor(canvas)
+            setPadding(dp(20), dp(42), dp(20), dp(12))
+            background = wallpaperDrawable()
         }
         val heading = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        heading.addView(label("All apps", 27f, ink, true), LinearLayout.LayoutParams(0, -2, 1f))
-        heading.addView(label("${apps.size} apps", 12f, muted))
+        heading.addView(label("All apps", 27f, Color.WHITE, true).apply {
+            setShadowLayer(5f, 0f, 2f, Color.BLACK)
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        heading.addView(label(apps.size.toString() + " apps", 12f, Color.WHITE).apply {
+            setShadowLayer(4f, 0f, 1f, Color.BLACK)
+        })
         dialogContent.addView(heading)
 
         val search = EditText(this).apply {
@@ -290,7 +335,7 @@ class MainActivity : Activity() {
             textSize = 15f
             setTextColor(ink)
             setHintTextColor(muted)
-            background = rounded(Color.WHITE, dp(20).toFloat())
+            background = rounded(Color.argb(220, 255, 255, 255), dp(22).toFloat())
             setPadding(dp(17), 0, dp(17), 0)
             imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
         }
@@ -304,6 +349,7 @@ class MainActivity : Activity() {
             verticalSpacing = dp(10)
             stretchMode = GridView.STRETCH_COLUMN_WIDTH
             isVerticalScrollBarEnabled = false
+            selector = ColorDrawable(Color.TRANSPARENT)
         }
         drawerAdapter = AppGridAdapter(apps)
         grid.adapter = drawerAdapter
@@ -322,10 +368,12 @@ class MainActivity : Activity() {
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
         dialog.setOnShowListener {
-            dialog.window?.setBackgroundDrawable(rounded(canvas, dp(28).toFloat()))
+            dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            dialog.window?.setDimAmount(0.08f)
             dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
         }
         dialog.show()
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
     }
 }
