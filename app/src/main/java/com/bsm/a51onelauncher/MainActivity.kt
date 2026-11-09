@@ -38,7 +38,7 @@ import kotlin.math.abs
 class MainActivity : Activity() {
     private val ink = Color.rgb(24, 28, 38)
     private val muted = Color.rgb(112, 118, 131)
-    private val prefs by lazy { getSharedPreferences("one_ui_home", MODE_PRIVATE) }
+    private val launcherPrefs by lazy { LauncherPreferences(this) }
     private val apps = mutableListOf<LauncherApp>()
     private var drawerDialog: AlertDialog? = null
     private var drawerAdapter: AppGridAdapter? = null
@@ -107,12 +107,11 @@ class MainActivity : Activity() {
     private fun saveWidget(id: Int) {
         val ids = widgetIds().toMutableList()
         if (!ids.contains(id)) ids.add(id)
-        prefs.edit().putString(WIDGETS_KEY, ids.joinToString(",")).apply()
+        launcherPrefs.saveWidgetIds(ids)
         showHome()
     }
 
-    private fun widgetIds(): List<Int> = prefs.getString(WIDGETS_KEY, "").orEmpty()
-        .split(",").mapNotNull { it.toIntOrNull() }.filter { it > 0 }
+    private fun widgetIds(): List<Int> = launcherPrefs.widgetIds()
 
     private fun wallpaperDrawable(): Drawable = try {
         WallpaperManager.getInstance(this).drawable ?: ColorDrawable(Color.DKGRAY)
@@ -139,20 +138,22 @@ class MainActivity : Activity() {
             runOnUiThread {
                 apps.clear()
                 apps.addAll(loaded)
-                if (!prefs.contains(HOME_KEY)) prefs.edit().putString(HOME_KEY, apps.take(8).joinToString("|") { it.key }).apply()
-                if (!prefs.contains(DOCK_KEY)) prefs.edit().putString(DOCK_KEY, apps.take(5).joinToString("|") { it.key }).apply()
+                launcherPrefs.initializeDefaults(
+                    apps.take(8).map { it.key },
+                    apps.take(5).map { it.key }
+                )
                 showHome()
             }
         }
     }
 
     private fun selectedApps(key: String): List<LauncherApp> {
-        val keys = prefs.getString(key, "").orEmpty().split("|").filter { it.isNotBlank() }
+        val keys = launcherPrefs.selectedAppKeys(key)
         return keys.mapNotNull { k -> apps.firstOrNull { it.key == k } }
     }
 
     private fun saveSelection(key: String, chosen: List<LauncherApp>) {
-        prefs.edit().putString(key, chosen.joinToString("|") { it.key }).apply()
+        launcherPrefs.saveSelectedAppKeys(key, chosen.map { it.key })
         showHome()
     }
 
@@ -398,7 +399,7 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this).setTitle("Widget")
             .setItems(arrayOf("Remove widget")) { _, _ ->
                 appWidgetHost.deleteAppWidgetId(id)
-                prefs.edit().putString(WIDGETS_KEY, widgetIds().filter { it != id }.joinToString(",")).apply()
+                launcherPrefs.saveWidgetIds(widgetIds().filter { it != id })
                 showHome()
             }.setNegativeButton("Cancel", null).show()
     }
@@ -415,7 +416,7 @@ class MainActivity : Activity() {
             .setItems(names.toTypedArray()) { _, which ->
                 val id = ids[which]
                 appWidgetHost.deleteAppWidgetId(id)
-                prefs.edit().putString(WIDGETS_KEY, widgetIds().filter { it != id }.joinToString(",")).apply()
+                launcherPrefs.saveWidgetIds(widgetIds().filter { it != id })
                 showHome()
             }.setNegativeButton("Close", null).show()
     }
