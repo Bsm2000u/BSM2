@@ -121,8 +121,8 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
         }
-        greeting.addView(label("MONDAY STYLE", 10f, muted, true).apply { gravity = Gravity.CENTER })
-        greeting.addView(label("Good day", 25f, ink, true).apply {
+        greeting.addView(label(SimpleDateFormat("EEEE", Locale.getDefault()).format(Date()).uppercase(Locale.getDefault()) + " STYLE", 10f, muted, true).apply { gravity = Gravity.CENTER })
+        greeting.addView(label(greetingText(), 25f, ink, true).apply {
             gravity = Gravity.CENTER
             setPadding(0, dp(3), 0, 0)
         })
