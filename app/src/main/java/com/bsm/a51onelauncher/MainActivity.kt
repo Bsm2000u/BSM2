@@ -31,6 +31,7 @@ class MainActivity : Activity() {
     private val apps = mutableListOf<LauncherApp>()
     private var drawerDialog: AlertDialog? = null
     private var drawerAdapter: AppGridAdapter? = null
+    private var drawerSearch: EditText? = null
 
     private data class LauncherApp(val info: ResolveInfo, val title: String, val icon: Drawable)
 
@@ -108,10 +109,14 @@ class MainActivity : Activity() {
         }
         val greeting = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
         }
-        greeting.addView(label("MONDAY STYLE", 10f, muted, true))
-        greeting.addView(label("Good day", 25f, ink, true).apply { setPadding(0, dp(3), 0, 0) })
+        greeting.addView(label("MONDAY STYLE", 10f, muted, true).apply { gravity = Gravity.CENTER })
+        greeting.addView(label("Good day", 25f, ink, true).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, dp(3), 0, 0)
+        })
         val profile = TextView(this).apply {
             text = "●"
             textSize = 22f
@@ -253,7 +258,11 @@ class MainActivity : Activity() {
     }
 
     private fun showAppDrawer() {
-        if (drawerDialog?.isShowing == true) return
+        if (drawerDialog != null) {
+            drawerSearch?.setText("")
+            drawerDialog?.show()
+            return
+        }
         val dialogContent = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(26), dp(20), dp(12))
@@ -290,6 +299,7 @@ class MainActivity : Activity() {
         }
         drawerAdapter = AppGridAdapter(apps)
         grid.adapter = drawerAdapter
+        drawerSearch = search
         dialogContent.addView(grid, LinearLayout.LayoutParams(-1, 0, 1f))
 
         val dialog = AlertDialog.Builder(this).setView(dialogContent).setNegativeButton("Close", null).create()
@@ -299,19 +309,13 @@ class MainActivity : Activity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val query = s?.toString()?.trim().orEmpty()
                 drawerAdapter?.submit(if (query.isEmpty()) apps else apps.filter { it.title.contains(query, true) })
-                grid.smoothScrollToPosition(0)
+                grid.setSelection(0)
             }
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
-        dialog.setOnDismissListener {
-            drawerDialog = null
-            drawerAdapter = null
-        }
         dialog.setOnShowListener {
             dialog.window?.setBackgroundDrawable(rounded(canvas, dp(28).toFloat()))
             dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
-            dialogContent.alpha = 0f
-            dialogContent.animate().alpha(1f).setDuration(160).start()
         }
         dialog.show()
         dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
