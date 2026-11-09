@@ -95,7 +95,7 @@ class MainActivity : Activity() {
             if (bold) setTypeface(typeface, Typeface.BOLD)
         }
 
-    private fun showHome() {
+    private fun greetingText(): String {\n        val hour = SimpleDateFormat("H", Locale.getDefault()).format(Date()).toIntOrNull() ?: 12\n        return when (hour) {\n            in 5..11 -> "Good morning"\n            in 12..16 -> "Good afternoon"\n            in 17..20 -> "Good evening"\n            else -> "Good night"\n        }\n    }\n\n    private fun showHome() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(canvas)
@@ -232,7 +232,7 @@ class MainActivity : Activity() {
                     isFocusable = true
                 }
                 icon = ImageView(this@MainActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
-                tile.addView(icon, LinearLayout.LayoutParams(dp(44), dp(44)))
+                tile.addView(icon, LinearLayout.LayoutParams(dp(48), dp(48)))
                 name = label("", 11f, ink, true).apply {
                     gravity = Gravity.CENTER
                     maxLines = 1
