@@ -237,8 +237,8 @@ class MainActivity : Activity() {
             verticalSpacing = dp(12)
             stretchMode = GridView.STRETCH_COLUMN_WIDTH
             isVerticalScrollBarEnabled = false
-            adapter = AppGridAdapter(favorites)
-            layoutParams = LinearLayout.LayoutParams(-1, dp(if (favorites.size > 4) 220 else 116))
+            adapter = AppGridAdapter(favorites, homeStyle = true)
+            layoutParams = LinearLayout.LayoutParams(-1, dp(if (favorites.size > 4) 236 else 124))
             selector = ColorDrawable(Color.TRANSPARENT)
         }
         content.addView(grid)
@@ -288,7 +288,10 @@ class MainActivity : Activity() {
         return this
     }
 
-    private inner class AppGridAdapter(initialItems: List<LauncherApp>) : BaseAdapter() {
+    private inner class AppGridAdapter(
+        initialItems: List<LauncherApp>,
+        private val homeStyle: Boolean = false
+    ) : BaseAdapter() {
         private val items = initialItems.toMutableList()
         fun submit(newItems: List<LauncherApp>) { items.clear(); items.addAll(newItems); notifyDataSetChanged() }
         override fun getCount(): Int = items.size
@@ -306,15 +309,24 @@ class MainActivity : Activity() {
             } else {
                 tile = LinearLayout(this@MainActivity).apply {
                     orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-                    setPadding(dp(3), dp(7), dp(3), dp(7)); minimumHeight = dp(100)
+                    setPadding(dp(if (homeStyle) 2 else 3), dp(if (homeStyle) 5 else 7),
+                        dp(if (homeStyle) 2 else 3), dp(if (homeStyle) 5 else 7))
+                    minimumHeight = dp(if (homeStyle) 108 else 100)
                     isClickable = true; isFocusable = true
                 }
                 icon = ImageView(this@MainActivity).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
-                tile.addView(icon, LinearLayout.LayoutParams(dp(52), dp(52)))
-                name = label("", 11.5f, Color.WHITE, true).apply {
-                    gravity = Gravity.CENTER; maxLines = 1; ellipsize = TextUtils.TruncateAt.END; shadow()
+                val iconSize = if (homeStyle) 58 else 52
+                tile.addView(icon, LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)))
+                name = label("", if (homeStyle) 12f else 11.5f, Color.WHITE, true).apply {
+                    gravity = Gravity.CENTER
+                    maxLines = 1
+                    ellipsize = TextUtils.TruncateAt.END
+                    shadow(if (homeStyle) 5f else 4f)
+                    if (homeStyle) letterSpacing = -0.015f
                 }
-                tile.addView(name, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+                tile.addView(name, LinearLayout.LayoutParams(-1, -2).apply {
+                    topMargin = dp(if (homeStyle) 5 else 7)
+                })
                 tile.tag = Pair(icon, name)
             }
             val app = getItem(position)
