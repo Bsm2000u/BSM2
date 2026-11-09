@@ -264,7 +264,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
         heading.addView(label("All apps", 27f, ink, true), LinearLayout.LayoutParams(0, -2, 1f))
-        heading.addView(label("\${apps.size} apps", 12f, muted))
+        heading.addView(label("${apps.size} apps", 12f, muted))
         dialogContent.addView(heading)
 
         val search = EditText(this).apply {
